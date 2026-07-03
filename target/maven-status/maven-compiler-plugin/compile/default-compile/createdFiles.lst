@@ -1,6 +1,9 @@
 config/Utilitaire.class
+config/UrlMethode.class
+config/ClassMethode.class
+config/Url2Method.class
 controller/FrontControllerServlet.class
 annotation/Url.class
-config/UrlMethode.class
+config/MethodeUrl.class
+annotation/Url2.class
 annotation/Controller.class
-config/ClassMethode.class

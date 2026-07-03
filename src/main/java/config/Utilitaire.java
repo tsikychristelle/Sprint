@@ -104,22 +104,13 @@ public class Utilitaire {
         
         return urlMethodes;
     }
-    public void printAllUrlMethode(String pkg){
-        List<UrlMethode> urlMethodes = getUrlMethodeByClass(pkg);
-        for (UrlMethode urlMethode : urlMethodes) {
-            System.out.println("URL: " + urlMethode.getUrl() + ", Classe: " + urlMethode.getClassMethode().getClasse().getName() + ", Méthode: " + urlMethode.getClassMethode().getMethode().getName());
-        }
-    }
-    // public void gererRequete (String url,List<UrlMethode> urlMethodes,String pkg){
-    //     for(UrlMethode urlMethode : urlMethodes){
-    //         if(urlMethode.getUrl().equals(url)){
-    //             System.out.println("URL trouvée: " + urlMethode.getUrl() + ", Classe: " + urlMethode.getClassMethode().getClasse().getName() + ", Méthode: " + urlMethode.getClassMethode().getMethode().getName());
-    //         }
-    //         else{
-    //             printAllUrlMethode(pkg);
-    //         }
+    // public void printAllUrlMethode(String pkg){
+    //     List<UrlMethode> urlMethodes = getUrlMethodeByClass(pkg);
+    //     for (UrlMethode urlMethode : urlMethodes) {
+    //         System.out.println("URL: " + urlMethode.getUrl() + ", Classe: " + urlMethode.getClassMethode().getClasse().getName() + ", Méthode: " + urlMethode.getClassMethode().getMethode().getName());
     //     }
     // }
+   
     public UrlMethode getMethodeUrl(List<UrlMethode> urlMethodes, String url) {
         if (urlMethodes == null || url == null) {
             
@@ -141,5 +132,49 @@ public class Utilitaire {
         }
         return null;
     }
+    public List<Url2Method> getUrl2MethodeByClass(String pkg){
+        List<Url2Method> urlMethodes = new ArrayList<>();
+        MethodeUrl methodeUrl = null;
+        try {
+            List<Class<?>> allClasses = getAllClass(pkg);
+        
+        for (Class<?> controllerClass : allClasses) {
+            for (Method method : controllerClass.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(annotation.Url2.class)) {
+                    methodeUrl = new MethodeUrl(method.getAnnotation(annotation.Url2.class).url(), method.getAnnotation(annotation.Url2.class).value());
+                    urlMethodes.add(new Url2Method(methodeUrl, new ClassMethode(controllerClass, method)));
+                }
+            }
+        }
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+        }
+        
+        return urlMethodes;
+    }
+    public Url2Method getMethod2Url(List<Url2Method> urlMethodes, String url) {
+        if (urlMethodes == null || url == null) {
+            
+            return null;
+        }
+
+        // Nettoyage de l'URL demandée (ex: "/mon-url/" devient "mon-url")
+        String cleanUrl = url.trim().replaceAll("^/+|/+$", "");
+        
+        for (Url2Method urlMethode : urlMethodes) {
+            if (urlMethode.getMethodeUrl() != null) {
+                // Nettoyage de l'URL stockée
+                String cleanStoredUrl = urlMethode.getMethodeUrl().getUrl().trim().replaceAll("^/+|/+$", "");
+
+                if (cleanStoredUrl.equals(cleanUrl)) {
+                    return urlMethode;
+                }
+            }
+        }
+        return null;
+    }
+
+    
         
 }
