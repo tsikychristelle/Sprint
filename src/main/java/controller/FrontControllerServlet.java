@@ -1,8 +1,11 @@
 package controller;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.List;
 
+import config.MethodeUrl;
+import config.Url2Method;
 import config.UrlMethode;
 import config.Utilitaire;
 import jakarta.servlet.ServletException;
@@ -13,13 +16,23 @@ public class FrontControllerServlet extends HttpServlet{
     private List<Class<?>> controllers;
     private List<Method> methodes;
     List<UrlMethode> listUrlMethode;
+    List<Url2Method> listUrl2Method;
     Utilitaire utilitaire = new Utilitaire();
     public void init() throws ServletException {
-       
-        // controllers = utilitaire.getClassesWithAnnotation("com.monApp");
-        // methodes = utilitaire.getMethodsWithAnnotation("com.monApp");
-       listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
+        listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
+        listUrl2Method = utilitaire.getUrl2MethodeByClass("com.monApp");
 
+        // Vérification des doublons pour l'annotation @Url2
+        HashSet<String> uniqueKeys = new HashSet<>();
+        for (Url2Method route : listUrl2Method) {
+            // On crée une clé unique combinant la méthode HTTP et l'URL (ex: "GET /test1")
+            String uniqueKey = route.getMethodeUrl().getMethode() + " " + route.getMethodeUrl().getUrl();
+            
+            // .add() retourne false si l'élément existe déjà dans le HashSet
+            if (!uniqueKeys.add(uniqueKey)) {
+                throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
+            }
+        }
     }
     public void doGet(HttpServletRequest req, HttpServletResponse res)
     throws ServletException, IOException {
@@ -32,7 +45,7 @@ public class FrontControllerServlet extends HttpServlet{
     
     }
     public void processRequest(HttpServletRequest req, HttpServletResponse res)
-throws ServletException, IOException {
+    throws ServletException, IOException {
     res.setContentType("text/html;charset=UTF-8");
 
     // 1. Récupérer l'URI complète (ex: /MonApplication/test)
@@ -44,29 +57,43 @@ throws ServletException, IOException {
     // 3. Extraire uniquement la route finale (ex: /test)
     String path = requestURI.substring(contextPath.length());
 
-        // [Optionnel] Si vous utilisez un mapping du style /front/*, retirez le dossier du servlet :
-        // String servletPath = req.getServletPath();
-        // String path = requestURI.substring(contextPath.length() + servletPath.length());
-
-        // Petit log de secours pour voir ce que Christelle-Framework reçoit réellement :
-        System.out.println("[Debug Framework] URI demandée : " + path);
-
-        // 4. Lancer la recherche avec le chemin nettoyé
-        UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
         
-        if (urlMethode1 != null) {
-            res.getWriter().println("<h3>URL trouvée :</h3>");
-            res.getWriter().println("URL: " + urlMethode1.getUrl() + 
-                                    ", Classe: " + urlMethode1.getClassMethode().getClasse().getName() + 
-                                    ", Méthode: " + urlMethode1.getClassMethode().getMethode().getName());
-        } else {
-            res.getWriter().println("<h3>URL non trouvée (" + path + "). Voici les URLs disponibles :</h3>");
-            for (UrlMethode urlMethode : listUrlMethode) {
-                res.getWriter().println("<p>URL: " + urlMethode.getUrl() + 
-                                        ", Classe: " + urlMethode.getClassMethode().getClasse().getName() + 
-                                        ", Méthode: " + urlMethode.getClassMethode().getMethode().getName() + "</p>");
+
+        
+        
+            UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
+    
+        HashSet<MethodeUrl> uniqueRoutes = new HashSet<>();
+            Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
+            String httpMethod = req.getMethod();
+
+        if (url2Methode != null && url2Methode.getMethodeUrl().getMethode().equals(httpMethod)) {
+            try {
+                Object controllerInstance = url2Methode.getClassMethode().getClasse().getDeclaredConstructor().newInstance();
+                Method methodToInvoke = url2Methode.getClassMethode().getMethode();
+                Object result = methodToInvoke.invoke(controllerInstance);
+                
+                res.getWriter().write((String) result);
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.getWriter().write("Erreur d'exécution : " + e.getMessage());
             }
+        } else {
+            // La route n'existe pas : on renvoie un code 404 et on liste les options
+            res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            res.getWriter().write("<h1>404 - Page non trouvée</h1>");
+            res.getWriter().write("<p>Le chemin <b>" + path + "</b> (" + httpMethod + ") n'existe pas.</p>");
+            res.getWriter().write("<h3>Routes disponibles :</h3><ul>");
+            
+            for (Url2Method route : listUrl2Method) {
+                res.getWriter().write("<li><b>" + route.getMethodeUrl().getMethode() + "</b> : " 
+                    + route.getMethodeUrl().getUrl() + " -> " 
+                    + route.getClassMethode().getClasse().getSimpleName() + "." 
+                    + route.getClassMethode().getMethode().getName() + "()</li>");
+            }
+            res.getWriter().write("</ul>");
         }
+            
     }
 
 }
