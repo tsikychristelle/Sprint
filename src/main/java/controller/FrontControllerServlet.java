@@ -3,8 +3,10 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import config.MethodeUrl;
+import config.ModelAndView;
 import config.Url2Method;
 import config.UrlMethode;
 import config.Utilitaire;
@@ -17,6 +19,8 @@ public class FrontControllerServlet extends HttpServlet{
     private List<Method> methodes;
     List<UrlMethode> listUrlMethode;
     List<Url2Method> listUrl2Method;
+    String prefixeView ;
+    String suffixeView ;
     Utilitaire utilitaire = new Utilitaire();
     public void init() throws ServletException {
         listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
@@ -33,6 +37,8 @@ public class FrontControllerServlet extends HttpServlet{
                 throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
             }
         }
+        prefixeView = getServletConfig().getInitParameter("prefixeView");
+        suffixeView = getServletConfig().getInitParameter("suffixeView");
     }
     public void doGet(HttpServletRequest req, HttpServletResponse res)
     throws ServletException, IOException {
@@ -46,22 +52,17 @@ public class FrontControllerServlet extends HttpServlet{
     }
     public void processRequest(HttpServletRequest req, HttpServletResponse res)
     throws ServletException, IOException {
-    res.setContentType("text/html;charset=UTF-8");
+        res.setContentType("text/html;charset=UTF-8");
 
-    // 1. Récupérer l'URI complète (ex: /MonApplication/test)
-    String requestURI = req.getRequestURI(); 
-    
-    // 2. Récupérer le chemin de base de l'application (ex: /MonApplication)
-    String contextPath = req.getContextPath();
-    
-    // 3. Extraire uniquement la route finale (ex: /test)
-    String path = requestURI.substring(contextPath.length());
-
+        // 1. Récupérer l'URI complète (ex: /MonApplication/test)
+        String requestURI = req.getRequestURI(); 
         
-
+        // 2. Récupérer le chemin de base de l'application (ex: /MonApplication)
+        String contextPath = req.getContextPath();
         
-        
-            UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
+        // 3. Extraire uniquement la route finale (ex: /test)
+        String path = requestURI.substring(contextPath.length());
+        UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
     
         HashSet<MethodeUrl> uniqueRoutes = new HashSet<>();
             Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
@@ -71,9 +72,16 @@ public class FrontControllerServlet extends HttpServlet{
             try {
                 Object controllerInstance = url2Methode.getClassMethode().getClasse().getDeclaredConstructor().newInstance();
                 Method methodToInvoke = url2Methode.getClassMethode().getMethode();
-                Object result = methodToInvoke.invoke(controllerInstance);
-                
-                res.getWriter().write((String) result);
+                ModelAndView modelAndView = (ModelAndView) methodToInvoke.invoke(controllerInstance);
+                String nomPage = modelAndView.getView();
+                Map<String, Object> model = modelAndView.getModel();
+                // Object result = methodToInvoke.invoke(controllerInstance);
+                for (Map.Entry<String, Object> entry : model.entrySet()) {
+                    req.setAttribute(entry.getKey(), entry.getValue());
+                }
+
+                req.getRequestDispatcher(prefixeView + nomPage + suffixeView).forward(req, res);
+                // res.getWriter().write((String) result);
             } catch (Exception e) {
                 e.printStackTrace();
                 res.getWriter().write("Erreur d'exécution : " + e.getMessage());
