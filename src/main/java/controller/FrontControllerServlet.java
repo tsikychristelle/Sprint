@@ -23,20 +23,20 @@ public class FrontControllerServlet extends HttpServlet{
     String suffixeView ;
     Utilitaire utilitaire = new Utilitaire();
     public void init() throws ServletException {
-        listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
-        listUrl2Method = utilitaire.getUrl2MethodeByClass("com.monApp");
+        // listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
+        // listUrl2Method = utilitaire.getUrl2MethodeByClass("com.monApp");
 
-        // Vérification des doublons pour l'annotation @Url2
-        HashSet<String> uniqueKeys = new HashSet<>();
-        for (Url2Method route : listUrl2Method) {
-            // On crée une clé unique combinant la méthode HTTP et l'URL (ex: "GET /test1")
-            String uniqueKey = route.getMethodeUrl().getMethode() + " " + route.getMethodeUrl().getUrl();
+        // // Vérification des doublons pour l'annotation @Url2
+        // HashSet<String> uniqueKeys = new HashSet<>();
+        // for (Url2Method route : listUrl2Method) {
+        //     // On crée une clé unique combinant la méthode HTTP et l'URL (ex: "GET /test1")
+        //     String uniqueKey = route.getMethodeUrl().getMethode() + " " + route.getMethodeUrl().getUrl();
             
-            // .add() retourne false si l'élément existe déjà dans le HashSet
-            if (!uniqueKeys.add(uniqueKey)) {
-                throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
-            }
-        }
+        //     // .add() retourne false si l'élément existe déjà dans le HashSet
+        //     if (!uniqueKeys.add(uniqueKey)) {
+        //         throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
+        //     }
+        // }
         prefixeView = getServletConfig().getInitParameter("prefixeView");
         suffixeView = getServletConfig().getInitParameter("suffixeView");
     }
