@@ -10,6 +10,7 @@ import config.ModelAndView;
 import config.Url2Method;
 import config.UrlMethode;
 import config.Utilitaire;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,6 +38,9 @@ public class FrontControllerServlet extends HttpServlet{
         //         throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
         //     }
         // }
+         ServletContext servletContext = getServletContext();
+        listUrlMethode = (List<UrlMethode>) servletContext.getAttribute("listUrlMethode");
+        listUrl2Method = (List<Url2Method>) servletContext.getAttribute("listUrl2Method");
         prefixeView = getServletConfig().getInitParameter("prefixeView");
         suffixeView = getServletConfig().getInitParameter("suffixeView");
     }
@@ -53,7 +57,8 @@ public class FrontControllerServlet extends HttpServlet{
     public void processRequest(HttpServletRequest req, HttpServletResponse res)
     throws ServletException, IOException {
         res.setContentType("text/html;charset=UTF-8");
-
+       
+        // controllers = (List<Class<?>>) servletContext.getAttribute("listControllers
         // 1. Récupérer l'URI complète (ex: /MonApplication/test)
         String requestURI = req.getRequestURI(); 
         
@@ -62,7 +67,7 @@ public class FrontControllerServlet extends HttpServlet{
         
         // 3. Extraire uniquement la route finale (ex: /test)
         String path = requestURI.substring(contextPath.length());
-        UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
+        // UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
     
         HashSet<MethodeUrl> uniqueRoutes = new HashSet<>();
             Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);

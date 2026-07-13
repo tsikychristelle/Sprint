@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import jakarta.servlet.ServletException;
+
 import config.ClassMethode;
 import config.MethodeUrl;
 import config.Url2Method;
@@ -22,7 +22,7 @@ public class AppInitializer implements ServletContextListener {
     List<Url2Method> listUrl2Method;
     Utilitaire utilitaire = new Utilitaire();
     @Override
-    public void contextInitialized(ServletContextEvent sce) {
+    public void contextInitialized(ServletContextEvent sce){
         ServletContext servletContext = sce.getServletContext();
 
         listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
@@ -35,13 +35,19 @@ public class AppInitializer implements ServletContextListener {
             String uniqueKey = route.getMethodeUrl().getMethode() + " " + route.getMethodeUrl().getUrl();
             
             // .add() retourne false si l'élément existe déjà dans le HashSet
-            if (!uniqueKeys.add(uniqueKey)) {
-                throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
+
+            try{
+                if (!uniqueKeys.add(uniqueKey)) {
+                    throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
+                }
+            } catch (ServletException e) {
+                e.printStackTrace();
             }
+           
         }
 
-        servletContext.setAttribute("listControllers", listControllers);
-        servletContext.setAttribute("urlMethodMappings", urlMethodMappings);
+        servletContext.setAttribute("listUrlMethode", listUrlMethode);
+        servletContext.setAttribute("listUrl2Method", listUrl2Method);
     }
 
     @Override
