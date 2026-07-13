@@ -10,6 +10,7 @@ import config.ModelAndView;
 import config.Url2Method;
 import config.UrlMethode;
 import config.Utilitaire;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,20 +24,23 @@ public class FrontControllerServlet extends HttpServlet{
     String suffixeView ;
     Utilitaire utilitaire = new Utilitaire();
     public void init() throws ServletException {
-        listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
-        listUrl2Method = utilitaire.getUrl2MethodeByClass("com.monApp");
+        // listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
+        // listUrl2Method = utilitaire.getUrl2MethodeByClass("com.monApp");
 
-        // Vérification des doublons pour l'annotation @Url2
-        HashSet<String> uniqueKeys = new HashSet<>();
-        for (Url2Method route : listUrl2Method) {
-            // On crée une clé unique combinant la méthode HTTP et l'URL (ex: "GET /test1")
-            String uniqueKey = route.getMethodeUrl().getMethode() + " " + route.getMethodeUrl().getUrl();
+        // // Vérification des doublons pour l'annotation @Url2
+        // HashSet<String> uniqueKeys = new HashSet<>();
+        // for (Url2Method route : listUrl2Method) {
+        //     // On crée une clé unique combinant la méthode HTTP et l'URL (ex: "GET /test1")
+        //     String uniqueKey = route.getMethodeUrl().getMethode() + " " + route.getMethodeUrl().getUrl();
             
-            // .add() retourne false si l'élément existe déjà dans le HashSet
-            if (!uniqueKeys.add(uniqueKey)) {
-                throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
-            }
-        }
+        //     // .add() retourne false si l'élément existe déjà dans le HashSet
+        //     if (!uniqueKeys.add(uniqueKey)) {
+        //         throw new ServletException("Erreur de configuration : La route [" + uniqueKey + "] est déclarée plusieurs fois !");
+        //     }
+        // }
+         ServletContext servletContext = getServletContext();
+        listUrlMethode = (List<UrlMethode>) servletContext.getAttribute("listUrlMethode");
+        listUrl2Method = (List<Url2Method>) servletContext.getAttribute("listUrl2Method");
         prefixeView = getServletConfig().getInitParameter("prefixeView");
         suffixeView = getServletConfig().getInitParameter("suffixeView");
     }
@@ -53,7 +57,8 @@ public class FrontControllerServlet extends HttpServlet{
     public void processRequest(HttpServletRequest req, HttpServletResponse res)
     throws ServletException, IOException {
         res.setContentType("text/html;charset=UTF-8");
-
+       
+        // controllers = (List<Class<?>>) servletContext.getAttribute("listControllers
         // 1. Récupérer l'URI complète (ex: /MonApplication/test)
         String requestURI = req.getRequestURI(); 
         
@@ -62,7 +67,7 @@ public class FrontControllerServlet extends HttpServlet{
         
         // 3. Extraire uniquement la route finale (ex: /test)
         String path = requestURI.substring(contextPath.length());
-        UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
+        // UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
     
         HashSet<MethodeUrl> uniqueRoutes = new HashSet<>();
             Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
