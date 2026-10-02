@@ -104,6 +104,25 @@ public class Utilitaire {
         
         return urlMethodes;
     }
+    public List<Method> getMethodsWithAnnotationJSON(String pkg) {
+        List<Class<?>> controllerClasses = new ArrayList<>();
+        try {
+            controllerClasses = getAllClass(pkg);
+        }  catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la récupération des méthodes annotées : " + e.getMessage(), e);
+        }
+       
+        List<Method> annotatedMethods = new ArrayList<>();
+        for (Class<?> controllerClass : controllerClasses) {
+            for (Method method : controllerClass.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(annotation.JSON.class)) {
+                    annotatedMethods.add(method);
+                }
+            }
+        }
+        
+        return annotatedMethods;
+    }
     // public void printAllUrlMethode(String pkg){
     //     List<UrlMethode> urlMethodes = getUrlMethodeByClass(pkg);
     //     for (UrlMethode urlMethode : urlMethodes) {
@@ -174,7 +193,6 @@ public class Utilitaire {
         }
         return null;
     }
-
     
-        
+   
 }
