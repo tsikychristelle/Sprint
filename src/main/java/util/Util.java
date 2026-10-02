@@ -94,4 +94,5 @@ public class Util {
         String[] splitted = str.split(separator);
         return new ArrayList<>(List.of(splitted));
     }
+    
 }

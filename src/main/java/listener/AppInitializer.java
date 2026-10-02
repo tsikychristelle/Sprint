@@ -1,5 +1,6 @@
 package listener;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +21,7 @@ public class AppInitializer implements ServletContextListener {
     private Map<MethodeUrl, ClassMethode> urlMethodMappings = new HashMap<>();
     List<UrlMethode> listUrlMethode;
     List<Url2Method> listUrl2Method;
+    private List<Method> listMethodeJSON ;
     Utilitaire utilitaire = new Utilitaire();
     @Override
     public void contextInitialized(ServletContextEvent sce){
@@ -27,7 +29,7 @@ public class AppInitializer implements ServletContextListener {
 
         listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
         listUrl2Method = utilitaire.getUrl2MethodeByClass("com.monApp");
-
+        listMethodeJSON = utilitaire.getMethodsWithAnnotationJSON("com.monApp");
         // Vérification des doublons pour l'annotation @Url2
         HashSet<String> uniqueKeys = new HashSet<>();
         for (Url2Method route : listUrl2Method) {
@@ -46,6 +48,7 @@ public class AppInitializer implements ServletContextListener {
            
         }
 
+        servletContext.setAttribute("listMethodeJSON", listMethodeJSON);
         servletContext.setAttribute("listUrlMethode", listUrlMethode);
         servletContext.setAttribute("listUrl2Method", listUrl2Method);
     }

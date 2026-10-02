@@ -15,6 +15,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 public class FrontControllerServlet extends HttpServlet{
     private List<Class<?>> controllers;
     private List<Method> methodes;
@@ -39,6 +40,7 @@ public class FrontControllerServlet extends HttpServlet{
         //     }
         // }
          ServletContext servletContext = getServletContext();
+        methodes = (List<Method>) servletContext.getAttribute("listMethodeJSON");
         listUrlMethode = (List<UrlMethode>) servletContext.getAttribute("listUrlMethode");
         listUrl2Method = (List<Url2Method>) servletContext.getAttribute("listUrl2Method");
         prefixeView = getServletConfig().getInitParameter("prefixeView");
@@ -57,7 +59,6 @@ public class FrontControllerServlet extends HttpServlet{
     public void processRequest(HttpServletRequest req, HttpServletResponse res)
     throws ServletException, IOException {
         res.setContentType("text/html;charset=UTF-8");
-       
         // controllers = (List<Class<?>>) servletContext.getAttribute("listControllers
         // 1. Récupérer l'URI complète (ex: /MonApplication/test)
         String requestURI = req.getRequestURI(); 
@@ -68,15 +69,34 @@ public class FrontControllerServlet extends HttpServlet{
         // 3. Extraire uniquement la route finale (ex: /test)
         String path = requestURI.substring(contextPath.length());
         // UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
-    
+
+        // 4. Trouver la méthode correspondante
         HashSet<MethodeUrl> uniqueRoutes = new HashSet<>();
             Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
             String httpMethod = req.getMethod();
+            
 
         if (url2Methode != null && url2Methode.getMethodeUrl().getMethode().equals(httpMethod)) {
+       
             try {
                 Object controllerInstance = url2Methode.getClassMethode().getClasse().getDeclaredConstructor().newInstance();
                 Method methodToInvoke = url2Methode.getClassMethode().getMethode();
+                if (methodToInvoke.isAnnotationPresent(annotation.JSON.class)) {
+                    Object result = methodToInvoke.invoke(controllerInstance);
+                    if (methodToInvoke.getReturnType()== String.class) {
+                        res.setContentType("text/plain;charset=UTF-8");
+                        if (result!=null) {
+                            res.getWriter().write(result.toString());
+                        }
+                    }
+                    else{
+                        res.setContentType("application/json;charset=UTF-8");
+                        com.google.gson.Gson gson = new com.google.gson.Gson();
+                        String jsonResult = gson.toJson(result);
+                        res.getWriter().write(jsonResult); 
+                    }
+                }
+                else{
                 ModelAndView modelAndView = (ModelAndView) methodToInvoke.invoke(controllerInstance);
                 String nomPage = modelAndView.getView();
                 Map<String, Object> model = modelAndView.getModel();
@@ -86,12 +106,14 @@ public class FrontControllerServlet extends HttpServlet{
                 }
 
                 req.getRequestDispatcher(prefixeView + nomPage + suffixeView).forward(req, res);
+                }
                 // res.getWriter().write((String) result);
             } catch (Exception e) {
                 e.printStackTrace();
                 res.getWriter().write("Erreur d'exécution : " + e.getMessage());
             }
-        } else {
+        }
+         else {
             // La route n'existe pas : on renvoie un code 404 et on liste les options
             res.setStatus(HttpServletResponse.SC_NOT_FOUND);
             res.getWriter().write("<h1>404 - Page non trouvée</h1>");
