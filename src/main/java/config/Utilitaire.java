@@ -193,6 +193,26 @@ public class Utilitaire {
         }
         return null;
     }
+    public Object convertValue(String value, Class targetType) {
+        if (value == null) {
+            return null; // ou une valeur par défaut selon le type primitif
+        }
+
+        if (targetType == String.class) {
+            return value;
+        } else if (targetType == int.class || targetType == Integer.class) {
+            return Integer.parseInt(value);
+        } else if (targetType == long.class || targetType == Long.class) {
+            return Long.parseLong(value);
+        } else if (targetType == double.class || targetType == Double.class) {
+            return Double.parseDouble(value);
+        } else if (targetType == boolean.class || targetType == Boolean.class) {
+            return Boolean.parseBoolean(value);
+        }
+        // Vous pouvez ajouter d'autres types ici (ex: Date, float, etc.)
+        
+        return value; // Par défaut
+    }
     
    
 }
