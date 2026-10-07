@@ -1,11 +1,10 @@
 package controller;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.HashSet;
+import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 
-import config.MethodeUrl;
 import config.ModelAndView;
 import config.Url2Method;
 import config.UrlMethode;
@@ -57,78 +56,148 @@ public class FrontControllerServlet extends HttpServlet{
     
     }
     public void processRequest(HttpServletRequest req, HttpServletResponse res)
-    throws ServletException, IOException {
-        res.setContentType("text/html;charset=UTF-8");
-        // controllers = (List<Class<?>>) servletContext.getAttribute("listControllers
-        // 1. Récupérer l'URI complète (ex: /MonApplication/test)
-        String requestURI = req.getRequestURI(); 
-        
-        // 2. Récupérer le chemin de base de l'application (ex: /MonApplication)
+        throws ServletException, IOException {
+
+        String requestURI = req.getRequestURI();
         String contextPath = req.getContextPath();
-        
-        // 3. Extraire uniquement la route finale (ex: /test)
         String path = requestURI.substring(contextPath.length());
-        // UrlMethode urlMethode1 = utilitaire.getMethodeUrl(listUrlMethode, path);
+        String httpMethod = req.getMethod();
 
-        // 4. Trouver la méthode correspondante
-        HashSet<MethodeUrl> uniqueRoutes = new HashSet<>();
-            Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
-            String httpMethod = req.getMethod();
-            
+        Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
 
-        if (url2Methode != null && url2Methode.getMethodeUrl().getMethode().equals(httpMethod)) {
-       
-            try {
-                Object controllerInstance = url2Methode.getClassMethode().getClasse().getDeclaredConstructor().newInstance();
-                Method methodToInvoke = url2Methode.getClassMethode().getMethode();
-                if (methodToInvoke.isAnnotationPresent(annotation.JSON.class)) {
-                    Object result = methodToInvoke.invoke(controllerInstance);
-                    if (methodToInvoke.getReturnType()== String.class) {
-                        res.setContentType("text/plain;charset=UTF-8");
-                        if (result!=null) {
-                            res.getWriter().write(result.toString());
-                        }
-                    }
-                    else{
-                        res.setContentType("application/json;charset=UTF-8");
-                        com.google.gson.Gson gson = new com.google.gson.Gson();
-                        String jsonResult = gson.toJson(result);
-                        res.getWriter().write(jsonResult); 
-                    }
+        if (url2Methode == null
+                || !url2Methode.getMethodeUrl().getMethode().equals(httpMethod)) {
+
+            res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            res.setContentType("text/html;charset=UTF-8");
+
+            res.getWriter().write("<h1>404 - Page non trouvée</h1>");
+            res.getWriter().write(
+                    "<p>Le chemin <b>" + path + "</b> ("
+                            + httpMethod + ") n'existe pas.</p>"
+            );
+
+            res.getWriter().write("<h3>Routes disponibles :</h3><ul>");
+
+            if (listUrl2Method != null) {
+                for (Url2Method route : listUrl2Method) {
+                    res.getWriter().write(
+                            "<li><b>"
+                            + route.getMethodeUrl().getMethode()
+                            + "</b> : "
+                            + route.getMethodeUrl().getUrl()
+                            + " -> "
+                            + route.getClassMethode().getClasse().getSimpleName()
+                            + "."
+                            + route.getClassMethode().getMethode().getName()
+                            + "()</li>"
+                    );
                 }
-                else{
-                ModelAndView modelAndView = (ModelAndView) methodToInvoke.invoke(controllerInstance);
+            }
+
+            res.getWriter().write("</ul>");
+            return;
+        }
+
+        try {
+            Class<?> controllerClass =
+                    url2Methode.getClassMethode().getClasse();
+
+            Object controllerInstance =
+                    controllerClass.getDeclaredConstructor().newInstance();
+
+            Method methodToInvoke =
+                    url2Methode.getClassMethode().getMethode();
+
+            Parameter[] parameters = methodToInvoke.getParameters();
+            Object[] parameterValues = new Object[parameters.length];
+
+            /*
+            * Récupération et conversion des paramètres HTTP.
+            */
+            for (int i = 0; i < parameters.length; i++) {
+                Parameter parameter = parameters[i];
+
+                String parameterName = parameter.getName();
+                String parameterValue = req.getParameter(parameterName);
+                
+
+
+                parameterValues[i] = utilitaire.convertValue(
+                        parameterValue,
+                        parameter.getType()
+                );
+            }
+
+            /*
+            * La méthode doit être appelée une seule fois,
+            * après avoir préparé tous ses arguments.
+            */
+            Object result = methodToInvoke.invoke(
+                    controllerInstance,
+                    parameterValues
+            );
+
+            if (methodToInvoke.isAnnotationPresent(annotation.JSON.class)) {
+                if (methodToInvoke.getReturnType() == String.class) {
+                    res.setContentType("text/plain;charset=UTF-8");
+
+                    if (result != null) {
+                        res.getWriter().write(result.toString());
+                    }
+                } else {
+                    if(result !=null) {
+                         // Retourne un objet vide si le résultat est null
+                          res.setContentType("application/json;charset=UTF-8");
+
+                        com.google.gson.Gson gson =
+                            new com.google.gson.Gson();
+                        res.getWriter().write(gson.toJson(result));
+                       
+                    }
+                    else {
+                        res.setContentType("application/json;charset=UTF-8");
+                        res.getWriter().write("{}"); // Retourne un objet JSON vide
+                    }
+                   
+                }
+
+                return;
+            }
+           
+            else if(result instanceof ModelAndView) {
+
+                ModelAndView modelAndView = (ModelAndView) result;
+
                 String nomPage = modelAndView.getView();
                 Map<String, Object> model = modelAndView.getModel();
-                // Object result = methodToInvoke.invoke(controllerInstance);
-                for (Map.Entry<String, Object> entry : model.entrySet()) {
-                    req.setAttribute(entry.getKey(), entry.getValue());
+
+                if (model != null) {
+                    for (Map.Entry<String, Object> entry : model.entrySet()) {
+                        req.setAttribute(entry.getKey(), entry.getValue());
+                    }
                 }
 
-                req.getRequestDispatcher(prefixeView + nomPage + suffixeView).forward(req, res);
-                }
-                // res.getWriter().write((String) result);
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.getWriter().write("Erreur d'exécution : " + e.getMessage());
+                req.getRequestDispatcher(
+                        prefixeView + nomPage + suffixeView
+                ).forward(req, res);
             }
-        }
-         else {
-            // La route n'existe pas : on renvoie un code 404 et on liste les options
-            res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            res.getWriter().write("<h1>404 - Page non trouvée</h1>");
-            res.getWriter().write("<p>Le chemin <b>" + path + "</b> (" + httpMethod + ") n'existe pas.</p>");
-            res.getWriter().write("<h3>Routes disponibles :</h3><ul>");
-            
-            for (Url2Method route : listUrl2Method) {
-                res.getWriter().write("<li><b>" + route.getMethodeUrl().getMethode() + "</b> : " 
-                    + route.getMethodeUrl().getUrl() + " -> " 
-                    + route.getClassMethode().getClasse().getSimpleName() + "." 
-                    + route.getClassMethode().getMethode().getName() + "()</li>");
+            else{
+                res.setContentType("application/json;charset=UTF-8");
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                res.getWriter().write(gson.toJson(result));
+
+
             }
-            res.getWriter().write("</ul>");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            res.setContentType("text/plain;charset=UTF-8");
+            res.getWriter().write(
+                    "Erreur d'exécution : " + e.getMessage()
+            );
         }
-            
     }
-
 }
