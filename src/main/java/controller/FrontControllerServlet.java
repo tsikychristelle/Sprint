@@ -1,5 +1,6 @@
 package controller;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.List;
@@ -54,6 +55,41 @@ public class FrontControllerServlet extends HttpServlet{
     throws ServletException, IOException {
         processRequest(req, res);
     
+    }
+    private Object bindObject(
+        Class<?> objectClass,
+        String prefix,
+        HttpServletRequest req
+    ) throws Exception {
+
+        Object object = objectClass.getDeclaredConstructor().newInstance();
+
+        for (Field field : objectClass.getDeclaredFields()) {
+            field.setAccessible(true);
+
+            String fullName = prefix + "." + field.getName();
+
+            if (Utilitaire.isSimpleType(field.getType())) {
+                String value = req.getParameter(fullName);
+
+                if (value != null) {
+                    Object convertedValue =
+                        utilitaire.convertValue(value, field.getType());
+
+                    field.set(object, convertedValue);
+                }
+            } else {
+                Object nestedObject = bindObject(
+                    field.getType(),
+                    fullName,
+                    req
+                );
+
+                field.set(object, nestedObject);
+            }
+        }
+
+        return object;
     }
     public void processRequest(HttpServletRequest req, HttpServletResponse res)
         throws ServletException, IOException {
@@ -116,17 +152,48 @@ public class FrontControllerServlet extends HttpServlet{
             * Récupération et conversion des paramètres HTTP.
             */
             for (int i = 0; i < parameters.length; i++) {
+
                 Parameter parameter = parameters[i];
+                Class<?> classeParameters = parameter.getType();
+                if (Utilitaire.isSimpleType(classeParameters)) {
+                        String value = req.getParameter(parameter.getName());
 
-                String parameterName = parameter.getName();
-                String parameterValue = req.getParameter(parameterName);
+                        if (value != null) {
+                            parameterValues[i] = utilitaire.convertValue(
+                                value,
+                                classeParameters
+                            );
+                        }
+                    } else {
+                        parameterValues[i] = bindObject(
+                            classeParameters,
+                            parameter.getName(),
+                            req
+                        );
+                    }
                 
-
-
-                parameterValues[i] = utilitaire.convertValue(
-                        parameterValue,
-                        parameter.getType()
-                );
+                // else{
+                //     Object paramInstance = classeParameters.getDeclaredConstructor().newInstance();
+                //     boolean hasValue = false;
+                //     Field[] fields = classeParameters.getDeclaredFields();
+                //     for(Field field : fields){
+                //         String fieldName = field.getName();
+                //         String fieldValue = req.getParameter(fieldName);
+                //         if(fieldValue != null){
+                //             Object convertedValue = utilitaire.convertValue(
+                //                 fieldValue,
+                //                 field.getType()
+                //             );
+                //             field.setAccessible(true);
+                //             hasValue = true;
+                //             field.set(paramInstance, convertedValue);
+                //             if(hasValue){
+                //                 parameterValues[i] = paramInstance;
+                //             }
+                //         }
+                //     }
+                // }
+                
             }
 
             /*

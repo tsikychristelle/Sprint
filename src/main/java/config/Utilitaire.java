@@ -213,6 +213,14 @@ public class Utilitaire {
         
         return value; // Par défaut
     }
-    
+    public static boolean isSimpleType(Class<?> type) {
+        return type == String.class
+            || type == int.class
+            || type == Integer.class
+            || type == double.class
+            || type == Double.class
+            || type == boolean.class
+            || type == Boolean.class;
+    }
    
 }
