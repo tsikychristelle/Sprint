@@ -9,6 +9,7 @@ annotation/Login.class
 config/ClassMethode.class
 config/MapFile.class
 config/Url2Method.class
+annotation/AuthRole.class
 annotation/JSON.class
 annotation/Url.class
 config/Config.class

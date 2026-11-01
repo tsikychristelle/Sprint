@@ -3,9 +3,12 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import annotation.AuthRole;
+import config.ClassMethode;
 import config.MapFile;
 import config.ModelAndView;
 import config.Url2Method;
@@ -105,11 +108,27 @@ public class FrontControllerServlet extends HttpServlet{
         String httpMethod = req.getMethod();
         HttpSession session = req.getSession(false);
 
-        Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
-        
+        ClassMethode classMethode = null;
 
-            if (url2Methode == null
-                    || !url2Methode.getMethodeUrl().getMethode().equals(httpMethod)) {
+        Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
+
+        if (url2Methode != null
+                && url2Methode.getMethodeUrl().getMethode().equals(httpMethod)) {
+            classMethode = url2Methode.getClassMethode();
+        }
+
+        // Une méthode annotée @Url n'impose pas de méthode HTTP : elle est
+        // invocable en GET comme en POST, tant qu'aucune route @Url2 plus
+        // spécifique n'a déjà été trouvée pour ce chemin.
+        if (classMethode == null) {
+            UrlMethode urlMethode = utilitaire.getMethodeUrl(listUrlMethode, path);
+
+            if (urlMethode != null) {
+                classMethode = urlMethode.getClassMethode();
+            }
+        }
+
+        if (classMethode == null) {
 
                 res.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 res.setContentType("text/html;charset=UTF-8");
@@ -136,11 +155,20 @@ public class FrontControllerServlet extends HttpServlet{
                                 + "()</li>"
                         );
                     }
+                }
 
-
-
-
-                    
+                if (listUrlMethode != null) {
+                    for (UrlMethode route : listUrlMethode) {
+                        res.getWriter().write(
+                                "<li><b>GET/POST</b> : "
+                                + route.getUrl()
+                                + " -> "
+                                + route.getClassMethode().getClasse().getSimpleName()
+                                + "."
+                                + route.getClassMethode().getMethode().getName()
+                                + "()</li>"
+                        );
+                    }
                 }
 
                 res.getWriter().write("</ul>");
@@ -148,14 +176,23 @@ public class FrontControllerServlet extends HttpServlet{
             }
 
             try {
-                Class<?> controllerClass =
-                        url2Methode.getClassMethode().getClasse();
+                Class<?> controllerClass = classMethode.getClasse();
+
+                if (!controllerClass.isAnnotationPresent(annotation.Controller.class)) {
+                    sendError(
+                            res,
+                            HttpServletResponse.SC_FORBIDDEN,
+                            "403 - Interdit",
+                            "La classe " + controllerClass.getSimpleName()
+                                    + " n'est pas annotée @Controller."
+                    );
+                    return;
+                }
 
                 Object controllerInstance =
                         controllerClass.getDeclaredConstructor().newInstance();
 
-                Method methodToInvoke =
-                        url2Methode.getClassMethode().getMethode();
+                Method methodToInvoke = classMethode.getMethode();
 
                 Parameter[] parameters = methodToInvoke.getParameters();
                 Object[] parameterValues = new Object[parameters.length];
@@ -235,11 +272,12 @@ public class FrontControllerServlet extends HttpServlet{
                      session = req.getSession(true);
 
                     Object username = parameterValues[0];
-
+                    Object role = parameterValues[1];
                     if (username instanceof String user
                             && !user.isBlank()) {
 
                         session.setAttribute("user", user);
+                        session.setAttribute("role", role);
                         session.setAttribute("isAuthentificate", true);
                     }
                 }
@@ -260,6 +298,9 @@ public class FrontControllerServlet extends HttpServlet{
 
                         return;
                     }
+                }
+                if (!checkAccess(methodToInvoke, req, res)) {
+                    return;
                 }
 
                 /*
@@ -332,5 +373,41 @@ public class FrontControllerServlet extends HttpServlet{
                         "Erreur d'exécution : " + e.getMessage()
                 );
             }
+            
+    }
+    private void sendError(HttpServletResponse res, int status, String titre, String message) throws IOException {
+        res.setStatus(status);
+        res.setContentType("text/html;charset=UTF-8");
+        res.getWriter().write("<h1>" + titre + "</h1><p>" + message + "</p>");
+    }
+
+    /** Retourne true si l'accès est autorisé, sinon écrit la réponse d'erreur. */
+    private boolean checkAccess(Method m, HttpServletRequest req, HttpServletResponse res) throws IOException {
+        AuthRole authRole = m.getAnnotation(AuthRole.class);
+        if (authRole == null) {
+            authRole = m.getDeclaringClass().getAnnotation(AuthRole.class); // annotation sur la classe
+        }
+        if (authRole == null) {
+            return true; // pas de restriction
+        }
+
+        HttpSession s = req.getSession(false);
+        boolean connecte = s != null
+                && Boolean.TRUE.equals(s.getAttribute("isAuthentificate"))
+                && s.getAttribute("role") != null;
+
+        if (!connecte) {
+            sendError(res, HttpServletResponse.SC_UNAUTHORIZED, "401 - Non autorisé",
+                    "Vous devez être authentifié pour accéder à cette ressource.");
+            return false;
+        }
+
+        String userRole = s.getAttribute("role").toString();
+        if (!Arrays.asList(authRole.role()).contains(userRole)) {
+            sendError(res, HttpServletResponse.SC_FORBIDDEN, "403 - Interdit",
+                    "Vous n'avez pas le rôle requis pour accéder à cette ressource.");
+            return false;
+        }
+        return true;
     }
 }
