@@ -22,6 +22,8 @@ public class AppInitializer implements ServletContextListener {
     List<UrlMethode> listUrlMethode;
     List<Url2Method> listUrl2Method;
     private List<Method> listMethodeJSON ;
+    private List<Method> listMethodeLogin ;
+    List<Class<?>> classController ;
     Utilitaire utilitaire = new Utilitaire();
     @Override
     public void contextInitialized(ServletContextEvent sce){
@@ -30,6 +32,9 @@ public class AppInitializer implements ServletContextListener {
         listUrlMethode = utilitaire.getUrlMethodeByClass("com.monApp");
         listUrl2Method = utilitaire.getUrl2MethodeByClass("com.monApp");
         listMethodeJSON = utilitaire.getMethodsWithAnnotationJSON("com.monApp");
+        listMethodeLogin = utilitaire.getMethodsWithAnnotationLogin("com.monApp");
+        classController = utilitaire.getClassesWithAnnotation("com.monApp");
+
         // Vérification des doublons pour l'annotation @Url2
         HashSet<String> uniqueKeys = new HashSet<>();
         for (Url2Method route : listUrl2Method) {
@@ -47,10 +52,11 @@ public class AppInitializer implements ServletContextListener {
             }
            
         }
-
+        servletContext.setAttribute("listMethodeLogin", listMethodeLogin);
         servletContext.setAttribute("listMethodeJSON", listMethodeJSON);
         servletContext.setAttribute("listUrlMethode", listUrlMethode);
         servletContext.setAttribute("listUrl2Method", listUrl2Method);
+        servletContext.setAttribute("classController", listControllers);
     }
 
     @Override

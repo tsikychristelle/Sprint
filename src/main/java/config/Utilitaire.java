@@ -1,5 +1,6 @@
 package config;
 
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,8 +11,10 @@ import org.reflections.scanners.Scanners;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
+import org.springframework.web.multipart.MultipartFile;
 
 import annotation.Controller;
+import jakarta.servlet.http.Part;
 public class Utilitaire {
     
     public List<Class<?>> getClassesWithAnnotation(String pkg) {
@@ -59,6 +62,25 @@ public class Utilitaire {
         for (Class<?> controllerClass : controllerClasses) {
             for (Method method : controllerClass.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(annotation.Url.class)) {
+                    annotatedMethods.add(method);
+                }
+            }
+        }
+        
+        return annotatedMethods;
+    }
+    public List<Method> getMethodsWithAnnotationLogin(String pkg) {
+        List<Class<?>> controllerClasses = new ArrayList<>();
+        try {
+            controllerClasses = getAllClass(pkg);
+        }  catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la récupération des méthodes annotées : " + e.getMessage(), e);
+        }
+       
+        List<Method> annotatedMethods = new ArrayList<>();
+        for (Class<?> controllerClass : controllerClasses) {
+            for (Method method : controllerClass.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(annotation.Login.class)) {
                     annotatedMethods.add(method);
                 }
             }
@@ -222,5 +244,24 @@ public class Utilitaire {
             || type == boolean.class
             || type == Boolean.class;
     }
+    public static boolean isFile(Class<?> type) {
+        return type == MultipartFile.class 
+            || type == MultipartFile[].class
+            || type == MapFile.class;
+    }
+    public MapFile manageFile(Part filePart){
+        MapFile mapFile = new MapFile();
+        mapFile.setFilename(filePart.getSubmittedFileName());
+        mapFile.setMimeType(filePart.getContentType());
+        try (InputStream data = filePart.getInputStream()){
+            mapFile.setData(data.readAllBytes());
+            
+        } catch (Exception e) { 
+            e.printStackTrace();
+        }
+        return mapFile;
+
+    }
+    
    
 }

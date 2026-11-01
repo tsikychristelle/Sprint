@@ -6,21 +6,27 @@ import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 
+import config.MapFile;
 import config.ModelAndView;
 import config.Url2Method;
 import config.UrlMethode;
 import config.Utilitaire;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
+@MultipartConfig
 public class FrontControllerServlet extends HttpServlet{
     private List<Class<?>> controllers;
     private List<Method> methodes;
     List<UrlMethode> listUrlMethode;
     List<Url2Method> listUrl2Method;
+    private List<Method> listMethodeLogin;
+    
     String prefixeView ;
     String suffixeView ;
     Utilitaire utilitaire = new Utilitaire();
@@ -42,9 +48,12 @@ public class FrontControllerServlet extends HttpServlet{
          ServletContext servletContext = getServletContext();
         methodes = (List<Method>) servletContext.getAttribute("listMethodeJSON");
         listUrlMethode = (List<UrlMethode>) servletContext.getAttribute("listUrlMethode");
+        listMethodeLogin = (List<Method>) servletContext.getAttribute("listMethodeLogin");
         listUrl2Method = (List<Url2Method>) servletContext.getAttribute("listUrl2Method");
         prefixeView = getServletConfig().getInitParameter("prefixeView");
+        controllers = (List<Class<?>>) servletContext.getAttribute("classController");
         suffixeView = getServletConfig().getInitParameter("suffixeView");
+
     }
     public void doGet(HttpServletRequest req, HttpServletResponse res)
     throws ServletException, IOException {
@@ -56,11 +65,7 @@ public class FrontControllerServlet extends HttpServlet{
         processRequest(req, res);
     
     }
-    private Object bindObject(
-        Class<?> objectClass,
-        String prefix,
-        HttpServletRequest req
-    ) throws Exception {
+    private Object bindObject(Class<?> objectClass,String prefix,HttpServletRequest req) throws Exception {
 
         Object object = objectClass.getDeclaredConstructor().newInstance();
 
@@ -100,171 +105,212 @@ public class FrontControllerServlet extends HttpServlet{
         String httpMethod = req.getMethod();
 
         Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
+        
 
-        if (url2Methode == null
-                || !url2Methode.getMethodeUrl().getMethode().equals(httpMethod)) {
+            if (url2Methode == null
+                    || !url2Methode.getMethodeUrl().getMethode().equals(httpMethod)) {
 
-            res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            res.setContentType("text/html;charset=UTF-8");
+                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                res.setContentType("text/html;charset=UTF-8");
 
-            res.getWriter().write("<h1>404 - Page non trouvée</h1>");
-            res.getWriter().write(
-                    "<p>Le chemin <b>" + path + "</b> ("
-                            + httpMethod + ") n'existe pas.</p>"
-            );
+                res.getWriter().write("<h1>404 - Page non trouvée</h1>");
+                res.getWriter().write(
+                        "<p>Le chemin <b>" + path + "</b> ("
+                                + httpMethod + ") n'existe pas.</p>"
+                );
 
-            res.getWriter().write("<h3>Routes disponibles :</h3><ul>");
+                res.getWriter().write("<h3>Routes disponibles :</h3><ul>");
 
-            if (listUrl2Method != null) {
-                for (Url2Method route : listUrl2Method) {
-                    res.getWriter().write(
-                            "<li><b>"
-                            + route.getMethodeUrl().getMethode()
-                            + "</b> : "
-                            + route.getMethodeUrl().getUrl()
-                            + " -> "
-                            + route.getClassMethode().getClasse().getSimpleName()
-                            + "."
-                            + route.getClassMethode().getMethode().getName()
-                            + "()</li>"
-                    );
-                }
-            }
-
-            res.getWriter().write("</ul>");
-            return;
-        }
-
-        try {
-            Class<?> controllerClass =
-                    url2Methode.getClassMethode().getClasse();
-
-            Object controllerInstance =
-                    controllerClass.getDeclaredConstructor().newInstance();
-
-            Method methodToInvoke =
-                    url2Methode.getClassMethode().getMethode();
-
-            Parameter[] parameters = methodToInvoke.getParameters();
-            Object[] parameterValues = new Object[parameters.length];
-
-            /*
-            * Récupération et conversion des paramètres HTTP.
-            */
-            for (int i = 0; i < parameters.length; i++) {
-
-                Parameter parameter = parameters[i];
-                Class<?> classeParameters = parameter.getType();
-                if (Utilitaire.isSimpleType(classeParameters)) {
-                        String value = req.getParameter(parameter.getName());
-
-                        if (value != null) {
-                            parameterValues[i] = utilitaire.convertValue(
-                                value,
-                                classeParameters
-                            );
-                        }
-                    } else {
-                        parameterValues[i] = bindObject(
-                            classeParameters,
-                            parameter.getName(),
-                            req
+                if (listUrl2Method != null) {
+                    for (Url2Method route : listUrl2Method) {
+                        res.getWriter().write(
+                                "<li><b>"
+                                + route.getMethodeUrl().getMethode()
+                                + "</b> : "
+                                + route.getMethodeUrl().getUrl()
+                                + " -> "
+                                + route.getClassMethode().getClasse().getSimpleName()
+                                + "."
+                                + route.getClassMethode().getMethode().getName()
+                                + "()</li>"
                         );
                     }
-                
-                // else{
-                //     Object paramInstance = classeParameters.getDeclaredConstructor().newInstance();
-                //     boolean hasValue = false;
-                //     Field[] fields = classeParameters.getDeclaredFields();
-                //     for(Field field : fields){
-                //         String fieldName = field.getName();
-                //         String fieldValue = req.getParameter(fieldName);
-                //         if(fieldValue != null){
-                //             Object convertedValue = utilitaire.convertValue(
-                //                 fieldValue,
-                //                 field.getType()
-                //             );
-                //             field.setAccessible(true);
-                //             hasValue = true;
-                //             field.set(paramInstance, convertedValue);
-                //             if(hasValue){
-                //                 parameterValues[i] = paramInstance;
-                //             }
-                //         }
-                //     }
-                // }
-                
-            }
 
-            /*
-            * La méthode doit être appelée une seule fois,
-            * après avoir préparé tous ses arguments.
-            */
-            Object result = methodToInvoke.invoke(
-                    controllerInstance,
-                    parameterValues
-            );
 
-            if (methodToInvoke.isAnnotationPresent(annotation.JSON.class)) {
-                if (methodToInvoke.getReturnType() == String.class) {
-                    res.setContentType("text/plain;charset=UTF-8");
 
-                    if (result != null) {
-                        res.getWriter().write(result.toString());
-                    }
-                } else {
-                    if(result !=null) {
-                         // Retourne un objet vide si le résultat est null
-                          res.setContentType("application/json;charset=UTF-8");
 
-                        com.google.gson.Gson gson =
-                            new com.google.gson.Gson();
-                        res.getWriter().write(gson.toJson(result));
-                       
-                    }
-                    else {
-                        res.setContentType("application/json;charset=UTF-8");
-                        res.getWriter().write("{}"); // Retourne un objet JSON vide
-                    }
-                   
+                    
                 }
 
+                res.getWriter().write("</ul>");
                 return;
             }
-           
-            else if(result instanceof ModelAndView) {
 
-                ModelAndView modelAndView = (ModelAndView) result;
+            try {
+                Class<?> controllerClass =
+                        url2Methode.getClassMethode().getClasse();
 
-                String nomPage = modelAndView.getView();
-                Map<String, Object> model = modelAndView.getModel();
+                Object controllerInstance =
+                        controllerClass.getDeclaredConstructor().newInstance();
 
-                if (model != null) {
-                    for (Map.Entry<String, Object> entry : model.entrySet()) {
-                        req.setAttribute(entry.getKey(), entry.getValue());
+                Method methodToInvoke =
+                        url2Methode.getClassMethode().getMethode();
+
+                Parameter[] parameters = methodToInvoke.getParameters();
+                Object[] parameterValues = new Object[parameters.length];
+
+                /*
+                * Récupération et conversion des paramètres HTTP.
+                */
+                for (int i = 0; i < parameters.length; i++) {
+
+                    Parameter parameter = parameters[i];
+                    Class<?> classeParameters = parameter.getType();
+                    if (Utilitaire.isSimpleType(classeParameters)) {
+                            String value = req.getParameter(parameter.getName());
+
+                            if (value != null) {
+                                parameterValues[i] = utilitaire.convertValue(
+                                    value,
+                                    classeParameters
+                                );
+                            }
+                            
+                    }
+                    
+                    else if(parameter.getType()==MapFile.class) {
+                        String partName = parameter.getName();
+                        Part filePart = req.getPart(partName);
+
+                        if (filePart == null || filePart.getSize() == 0) {
+                            throw new ServletException(
+                                "Aucun fichier reçu pour le champ : " + partName
+                            );
+                        }
+
+                        parameterValues[i] = utilitaire.manageFile(filePart);
+                    }
+                    else if (parameter.getType() == HttpSession.class) {
+                        parameterValues[i] = req.getSession(true);
+                    }
+                    else if (parameter.getType() == HttpServletRequest.class) {
+                        parameterValues[i] = req;
+                    }
+                    else if (parameter.getType() == HttpServletResponse.class) {
+                        parameterValues[i] = res;
+                    }
+                    else {
+                            parameterValues[i] = bindObject(
+                                classeParameters,
+                                parameter.getName(),
+                                req
+                            );
+                    }
+                    
+                    // else{
+                    //     Object paramInstance = classeParameters.getDeclaredConstructor().newInstance();
+                    //     boolean hasValue = false;
+                    //     Field[] fields = classeParameters.getDeclaredFields();
+                    //     for(Field field : fields){
+                    //         String fieldName = field.getName();
+                    //         String fieldValue = req.getParameter(fieldName);
+                    //         if(fieldValue != null){
+                    //             Object convertedValue = utilitaire.convertValue(
+                    //                 fieldValue,
+                    //                 field.getType()
+                    //             );
+                    //             field.setAccessible(true);
+                    //             hasValue = true;
+                    //             field.set(paramInstance, convertedValue);
+                    //             if(hasValue){
+                    //                 parameterValues[i] = paramInstance;
+                    //             }
+                    //         }
+                    //     }
+                    // }
+                    
+                }
+                if (methodToInvoke.isAnnotationPresent(annotation.Login.class)) {
+                    HttpSession session = req.getSession(true);
+
+                    Object username = parameterValues[0];
+
+                    if (username instanceof String user
+                            && !user.isBlank()) {
+
+                        session.setAttribute("user", user);
+                        session.setAttribute("isAuthentificate", true);
                     }
                 }
+                /*
+                * La méthode doit être appelée une seule fois,
+                * après avoir préparé tous ses arguments.
+                */
+                Object result = methodToInvoke.invoke(
+                        controllerInstance,
+                        parameterValues
+                );
 
-                req.getRequestDispatcher(
-                        prefixeView + nomPage + suffixeView
-                ).forward(req, res);
+                if (methodToInvoke.isAnnotationPresent(annotation.JSON.class)) {
+                    if (methodToInvoke.getReturnType() == String.class) {
+                        res.setContentType("text/plain;charset=UTF-8");
+
+                        if (result != null) {
+                            res.getWriter().write(result.toString());
+                        }
+                    } else {
+                        if(result !=null) {
+                            // Retourne un objet vide si le résultat est null
+                            res.setContentType("application/json;charset=UTF-8");
+
+                            com.google.gson.Gson gson =
+                                new com.google.gson.Gson();
+                            res.getWriter().write(gson.toJson(result));
+                        
+                        }
+                        else {
+                            res.setContentType("application/json;charset=UTF-8");
+                            res.getWriter().write("{}"); // Retourne un objet JSON vide
+                        }
+                    
+                    }
+
+                    return;
+                }
+            
+                else if(result instanceof ModelAndView) {
+
+                    ModelAndView modelAndView = (ModelAndView) result;
+
+                    String nomPage = modelAndView.getView();
+                    Map<String, Object> model = modelAndView.getModel();
+
+                    if (model != null) {
+                        for (Map.Entry<String, Object> entry : model.entrySet()) {
+                            req.setAttribute(entry.getKey(), entry.getValue());
+                        }
+                    }
+
+                    req.getRequestDispatcher(
+                            prefixeView + nomPage + suffixeView
+                    ).forward(req, res);
+                }
+                else{
+                    res.setContentType("application/json;charset=UTF-8");
+                    com.google.gson.Gson gson = new com.google.gson.Gson();
+                    res.getWriter().write(gson.toJson(result));
+
+
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+
+                res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                res.setContentType("text/plain;charset=UTF-8");
+                res.getWriter().write(
+                        "Erreur d'exécution : " + e.getMessage()
+                );
             }
-            else{
-                res.setContentType("application/json;charset=UTF-8");
-                com.google.gson.Gson gson = new com.google.gson.Gson();
-                res.getWriter().write(gson.toJson(result));
-
-
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            res.setContentType("text/plain;charset=UTF-8");
-            res.getWriter().write(
-                    "Erreur d'exécution : " + e.getMessage()
-            );
-        }
     }
 }
