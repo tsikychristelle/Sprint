@@ -103,6 +103,7 @@ public class FrontControllerServlet extends HttpServlet{
         String contextPath = req.getContextPath();
         String path = requestURI.substring(contextPath.length());
         String httpMethod = req.getMethod();
+        HttpSession session = req.getSession(false);
 
         Url2Method url2Methode = utilitaire.getMethod2Url(listUrl2Method, path);
         
@@ -231,7 +232,7 @@ public class FrontControllerServlet extends HttpServlet{
                     
                 }
                 if (methodToInvoke.isAnnotationPresent(annotation.Login.class)) {
-                    HttpSession session = req.getSession(true);
+                     session = req.getSession(true);
 
                     Object username = parameterValues[0];
 
@@ -242,6 +243,25 @@ public class FrontControllerServlet extends HttpServlet{
                         session.setAttribute("isAuthentificate", true);
                     }
                 }
+                if( methodToInvoke.isAnnotationPresent(annotation.Auth.class)) {
+                    session = req.getSession(false);
+
+                    if (session == null
+                            || session.getAttribute("isAuthentificate") == null
+                            || !(Boolean) session.getAttribute("isAuthentificate")) {
+
+                        res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        res.setContentType("text/html;charset=UTF-8");
+
+                        res.getWriter().write("<h1>401 - Non autorisé</h1>");
+                        res.getWriter().write(
+                                "<p>Vous devez être authentifié pour accéder à cette ressource.</p>"
+                        );
+
+                        return;
+                    }
+                }
+
                 /*
                 * La méthode doit être appelée une seule fois,
                 * après avoir préparé tous ses arguments.

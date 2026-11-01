@@ -1,6 +1,7 @@
 config/Utilitaire.class
 util/Util.class
 config/UrlMethode.class
+annotation/Auth.class
 controller/FrontControllerServlet.class
 config/MethodeUrl.class
 config/ModelAndView.class

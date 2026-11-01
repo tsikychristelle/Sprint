@@ -145,6 +145,25 @@ public class Utilitaire {
         
         return annotatedMethods;
     }
+    public List<Method> getMethodsWithAnnotationAuth(String pkg) {
+        List<Class<?>> controllerClasses = new ArrayList<>();
+        try {
+            controllerClasses = getAllClass(pkg);
+        }  catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la récupération des méthodes annotées : " + e.getMessage(), e);
+        }
+       
+        List<Method> annotatedMethods = new ArrayList<>();
+        for (Class<?> controllerClass : controllerClasses) {
+            for (Method method : controllerClass.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(annotation.Auth.class)) {
+                    annotatedMethods.add(method);
+                }
+            }
+        }
+        
+        return annotatedMethods;
+    }
     // public void printAllUrlMethode(String pkg){
     //     List<UrlMethode> urlMethodes = getUrlMethodeByClass(pkg);
     //     for (UrlMethode urlMethode : urlMethodes) {
@@ -194,6 +213,7 @@ public class Utilitaire {
         
         return urlMethodes;
     }
+
     public Url2Method getMethod2Url(List<Url2Method> urlMethodes, String url) {
         if (urlMethodes == null || url == null) {
             
