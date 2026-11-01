@@ -51,12 +51,7 @@ public class Utilitaire {
     }
 
     public List<Method> getMethodsWithAnnotation(String pkg) {
-        List<Class<?>> controllerClasses = new ArrayList<>();
-        try {
-            controllerClasses = getAllClass(pkg);
-        }  catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la récupération des méthodes annotées : " + e.getMessage(), e);
-        }
+        List<Class<?>> controllerClasses = getClassesWithAnnotation(pkg);
        
         List<Method> annotatedMethods = new ArrayList<>();
         for (Class<?> controllerClass : controllerClasses) {
@@ -70,12 +65,7 @@ public class Utilitaire {
         return annotatedMethods;
     }
     public List<Method> getMethodsWithAnnotationLogin(String pkg) {
-        List<Class<?>> controllerClasses = new ArrayList<>();
-        try {
-            controllerClasses = getAllClass(pkg);
-        }  catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la récupération des méthodes annotées : " + e.getMessage(), e);
-        }
+        List<Class<?>> controllerClasses = getClassesWithAnnotation(pkg);
        
         List<Method> annotatedMethods = new ArrayList<>();
         for (Class<?> controllerClass : controllerClasses) {
@@ -89,12 +79,7 @@ public class Utilitaire {
         return annotatedMethods;
     }
     public List<ClassMethode> getClassMethodWithAnnotation(String pkg) {
-        List<Class<?>> controllerClasses = new ArrayList<>();
-        try {
-            controllerClasses = getAllClass(pkg);
-        }  catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la récupération des méthodes annotées : " + e.getMessage(), e);
-        }
+        List<Class<?>> controllerClasses = getClassesWithAnnotation(pkg);
        
         List<ClassMethode> annotatedClassMethods = new ArrayList<>();
         for (Class<?> controllerClass : controllerClasses) {
@@ -109,30 +94,19 @@ public class Utilitaire {
     }
     public List<UrlMethode> getUrlMethodeByClass(String pkg){
         List<UrlMethode> urlMethodes = new ArrayList<>();
-        try {
-            List<Class<?>> allClasses = getAllClass(pkg);
-        
-        for (Class<?> controllerClass : allClasses) {
+
+        for (Class<?> controllerClass : getClassesWithAnnotation(pkg)) {
             for (Method method : controllerClass.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(annotation.Url.class)) {
                     urlMethodes.add(new UrlMethode(method.getAnnotation(annotation.Url.class).value(), new ClassMethode(controllerClass, method)));
                 }
             }
         }
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-        }
-        
+
         return urlMethodes;
     }
     public List<Method> getMethodsWithAnnotationJSON(String pkg) {
-        List<Class<?>> controllerClasses = new ArrayList<>();
-        try {
-            controllerClasses = getAllClass(pkg);
-        }  catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la récupération des méthodes annotées : " + e.getMessage(), e);
-        }
+        List<Class<?>> controllerClasses = getClassesWithAnnotation(pkg);
        
         List<Method> annotatedMethods = new ArrayList<>();
         for (Class<?> controllerClass : controllerClasses) {
@@ -146,12 +120,7 @@ public class Utilitaire {
         return annotatedMethods;
     }
     public List<Method> getMethodsWithAnnotationAuth(String pkg) {
-        List<Class<?>> controllerClasses = new ArrayList<>();
-        try {
-            controllerClasses = getAllClass(pkg);
-        }  catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la récupération des méthodes annotées : " + e.getMessage(), e);
-        }
+        List<Class<?>> controllerClasses = getClassesWithAnnotation(pkg);
        
         List<Method> annotatedMethods = new ArrayList<>();
         for (Class<?> controllerClass : controllerClasses) {
@@ -195,10 +164,8 @@ public class Utilitaire {
     public List<Url2Method> getUrl2MethodeByClass(String pkg){
         List<Url2Method> urlMethodes = new ArrayList<>();
         MethodeUrl methodeUrl = null;
-        try {
-            List<Class<?>> allClasses = getAllClass(pkg);
-        
-        for (Class<?> controllerClass : allClasses) {
+
+        for (Class<?> controllerClass : getClassesWithAnnotation(pkg)) {
             for (Method method : controllerClass.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(annotation.Url2.class)) {
                     methodeUrl = new MethodeUrl(method.getAnnotation(annotation.Url2.class).url(), method.getAnnotation(annotation.Url2.class).value());
@@ -206,11 +173,7 @@ public class Utilitaire {
                 }
             }
         }
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-        }
-        
+
         return urlMethodes;
     }
 

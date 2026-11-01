@@ -56,7 +56,7 @@ public class AppInitializer implements ServletContextListener {
         servletContext.setAttribute("listMethodeJSON", listMethodeJSON);
         servletContext.setAttribute("listUrlMethode", listUrlMethode);
         servletContext.setAttribute("listUrl2Method", listUrl2Method);
-        servletContext.setAttribute("classController", listControllers);
+        servletContext.setAttribute("classController", classController);
     }
 
     @Override
