@@ -12,6 +12,7 @@ import config.MethodeUrl;
 import config.Url2Method;
 import config.UrlMethode;
 import config.Utilitaire;
+import data.JpaContext;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -33,7 +34,7 @@ public class AppInitializer implements ServletContextListener {
         listUrl2Method = utilitaire.getUrl2MethodeByClass("com.monApp");
         listMethodeJSON = utilitaire.getMethodsWithAnnotationJSON("com.monApp");
         listMethodeLogin = utilitaire.getMethodsWithAnnotationLogin("com.monApp");
-        classController = utilitaire.getClassesWithAnnotation("com.monApp");
+        classController = utilitaire.getClassesWithAnnotation("com.monApp.Controller");
 
         // Vérification des doublons pour l'annotation @Url2
         HashSet<String> uniqueKeys = new HashSet<>();
@@ -52,6 +53,13 @@ public class AppInitializer implements ServletContextListener {
             }
            
         }
+        try {
+            JpaContext.init(List.of("com.monApp.Repository"), "monframework-pu");
+            servletContext.setAttribute("Repository", JpaContext.getRepositories());
+        } catch (Exception e) {
+            // on bloque le démarrage si la base n'est pas accessible
+            throw new RuntimeException("Échec de l'initialisation JPA", e);
+        }
         servletContext.setAttribute("listMethodeLogin", listMethodeLogin);
         servletContext.setAttribute("listMethodeJSON", listMethodeJSON);
         servletContext.setAttribute("listUrlMethode", listUrlMethode);
@@ -61,7 +69,7 @@ public class AppInitializer implements ServletContextListener {
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-       
+       JpaContext.close();
     }
     
 }
