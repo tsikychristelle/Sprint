@@ -14,6 +14,7 @@ import config.ModelAndView;
 import config.Url2Method;
 import config.UrlMethode;
 import config.Utilitaire;
+import data.Injector;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -29,7 +30,7 @@ public class FrontControllerServlet extends HttpServlet{
     List<UrlMethode> listUrlMethode;
     List<Url2Method> listUrl2Method;
     private List<Method> listMethodeLogin;
-    
+    Map<Class<?>, Object> repositories;
     String prefixeView ;
     String suffixeView ;
     Utilitaire utilitaire = new Utilitaire();
@@ -56,6 +57,7 @@ public class FrontControllerServlet extends HttpServlet{
         prefixeView = getServletConfig().getInitParameter("prefixeView");
         controllers = (List<Class<?>>) servletContext.getAttribute("classController");
         suffixeView = getServletConfig().getInitParameter("suffixeView");
+        repositories = (Map<Class<?>, Object>) servletContext.getAttribute("Repository");
 
     }
     public void doGet(HttpServletRequest req, HttpServletResponse res)
@@ -188,9 +190,10 @@ public class FrontControllerServlet extends HttpServlet{
                     );
                     return;
                 }
-
+                
                 Object controllerInstance =
-                        controllerClass.getDeclaredConstructor().newInstance();
+                controllerClass.getDeclaredConstructor().newInstance();
+                Injector.inject(controllerInstance, repositories);   // <-- à ajouter
 
                 Method methodToInvoke = classMethode.getMethode();
 

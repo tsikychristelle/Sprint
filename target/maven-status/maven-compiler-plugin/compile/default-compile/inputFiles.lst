@@ -1,8 +1,10 @@
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/Auth.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/AuthRole.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/Controller.java
+/home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/Inject.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/JSON.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/Login.java
+/home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/Repository.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/Url.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/annotation/Url2.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/config/ClassMethode.java
@@ -14,5 +16,10 @@
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/config/UrlMethode.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/config/Utilitaire.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/controller/FrontControllerServlet.java
+/home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/data/CrudRepository.java
+/home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/data/Injector.java
+/home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/data/JpaContext.java
+/home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/data/RepositoryFactory.java
+/home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/data/SimpleRepository.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/listener/AppInitializer.java
 /home/tsiky-christelle/Documents/S4/WebDyn/Exercice/Sprint/src/main/java/util/Util.java
